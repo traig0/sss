@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #ffe4f0 0%, #ffd6e7 30%, #fff0d6 70%, #ffe8b0 100%);
+    font-family: 'Lato', sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Petal canvas */
+  #petal-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  /* Decorative corner roses */
+  .corner-deco {
+    position: fixed;
+    font-size: 4rem;
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(0.5px);
+  }
+  .corner-deco.tl { top: -10px; left: -10px; transform: rotate(-20deg); }
+  .corner-deco.tr { top: -10px; right: -10px; transform: rotate(20deg) scaleX(-1); }
+  .corner-deco.bl { bottom: -10px; left: -10px; transform: rotate(10deg); }
+  .corner-deco.br { bottom: -10px; right: -10px; transform: rotate(-10deg) scaleX(-1); }
+
+  .main-wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.2rem 3rem;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    margin-bottom: 2rem;
+    animation: fadeDown 1s ease both;
+  }
+
+  .hero-crown {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    animation: floatY 3s ease-in-out infinite;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 8vw, 3.8rem);
+    background: linear-gradient(135deg, #c0626e, #D4AF37, #c0626e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.8rem;
+    line-height: 1.15;
+  }
+
+  .hero .subtitle {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: #8b4a5a;
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    max-width: 520px;
+    margin: 0 auto 1rem;
+    line-height: 1.6;
+  }
+
+  .hero .small-msg {
+    color: #a06070;
+    font-size: 0.92rem;
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* Glass card */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    border-radius: 28px;
+    padding: 2.2rem 2rem;
+    box-shadow: 0 8px 40px rgba(192, 98, 110, 0.15), 0 2px 8px rgba(212, 175, 55, 0.1);
+    margin-bottom: 1.5rem;
+    animation: fadeUp 1s ease 0.3s both;
+  }
+
+  /* Message box */
+  .message-box {
+    min-height: 110px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1.5px solid rgba(212, 175, 55, 0.35);
+    border-radius: 18px;
+    padding: 1.5rem 1.6rem;
+    margin-bottom: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .message-box::before {
+    content: '"';
+    position: absolute;
+    top: -10px; left: 14px;
+    font-family: 'Playfair Display', serif;
+    font-size: 6rem;
+    color: rgba(212, 175, 55, 0.15);
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .message-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: #7a3545;
+    font-size: clamp(1rem, 3vw, 1.18rem);
+    line-height: 1.75;
+    text-align: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .message-text.fade-out { opacity: 0; transform: translateY(8px); }
+  .message-text.fade-in  { opacity: 1; transform: translateY(0); }
+
+  /* Main button */
+  .main-btn {
+    display: block;
+    width: 100%;
+    padding: 1.1rem 1rem;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #e8789a, #D4AF37, #e8789a);
+    background-size: 200% 200%;
+    color: #fff;
+    font-family: 'Lato', sans-serif;
+    font-size: clamp(0.95rem, 3vw, 1.12rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 6px 28px rgba(232, 120, 154, 0.45);
+    animation: gradientShift 4s ease infinite;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .main-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -60%;
+    width: 40%; height: 200%;
+    background: rgba(255,255,255,0.25);
+    transform: skewX(-20deg);
+    transition: left 0.5s ease;
+  }
+  .main-btn:hover::after { left: 120%; }
+  .main-btn:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 10px 36px rgba(232, 120, 154, 0.55); }
+  .main-btn:active { transform: scale(0.98); }
+
+  /* Counter */
+  .counter {
+    text-align: center;
+    margin-top: 1.2rem;
+    color: #b06878;
+    font-size: 0.95rem;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  .counter strong { color: #c0626e; font-size: 1.1rem; }
+
+  /* Love notes */
+  .love-notes-section {
+    animation: fadeUp 1s ease 0.5s both;
+  }
+
+  .love-notes-section h3 {
+    font-family: 'Playfair Display', serif;
+    color: #8b4a5a;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.8rem;
+  }
+
+  .note-chip {
+    background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 50px;
+    padding: 0.65rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #7a3545;
+    font-family: 'Lato', sans-serif;
+    font-weight: 400;
+    box-shadow: 0 2px 10px rgba(192,98,110,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .note-chip:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(192,98,110,0.18); }
+
+  /* Music button */
+  .music-btn {
+    display: block;
+    margin: 1.5rem auto 0;
+    padding: 0.6rem 1.4rem;
+    border: 1.5px solid rgba(212, 175, 55, 0.5);
+    border-radius: 50px;
+    background: rgba(255,255,255,0.4);
+    backdrop-filter: blur(10px);
+    color: #9a5565;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    animation: fadeUp 1s ease 0.7s both;
+  }
+  .music-btn:hover { background: rgba(255,255,255,0.7); box-shadow: 0 4px 14px rgba(212,175,55,0.25); transform: translateY(-1px); }
+  .music-btn.on { background: rgba(212,175,55,0.2); border-color: #D4AF37; color: #8b6520; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 2.5rem;
+    animation: fadeUp 1s ease 0.9s both;
+  }
+  footer .f1 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: #b06878;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+  }
+  footer .f2 {
+    color: #c0908a;
+    font-size: 0.82rem;
+    font-weight: 300;
+  }
+
+  /* Floating hearts overlay */
+  #hearts-container {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .heart-float {
+    position: absolute;
+    font-size: 1.4rem;
+    animation: heartRise 2.5s ease-out forwards;
+    opacity: 0;
+  }
+
+  /* Keyframes */
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(20px); }  to { opacity:1; transform:translateY(0); } }
+  @keyframes floatY   { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+  @keyframes gradientShift { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
+  @keyframes heartRise {
+    0%   { opacity:0; transform: translateY(0) scale(0.5); }
+    20%  { opacity:1; }
+    80%  { opacity:0.8; }
+    100% { opacity:0; transform: translateY(-200px) scale(1.2) rotate(20deg); }
+  }
+
+  @media (max-width: 480px) {
+    .glass-card { padding: 1.6rem 1.2rem; }
+    .corner-deco { font-size: 2.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="petal-canvas"></canvas>
+
+<div class="corner-deco tl">🌸🌷</div>
+<div class="corner-deco tr">🌷🌸</div>
+<div class="corner-deco bl">🌹✨</div>
+<div class="corner-deco br">✨🌹</div>
+
+<div id="hearts-container"></div>
+
+<div class="main-wrapper">
+
+  <!-- Hero -->
+  <section class="hero">
+    <span class="hero-crown">👑</span>
+    <h1>For Maya ❤️</h1>
+    <p class="subtitle">"A little reminder that you are stronger, smarter, and more capable than you think."</p>
+    <p class="small-msg">Whenever you feel tired, stressed, or unmotivated — press the button below and let me remind you how amazing you are. 🌷</p>
+  </section>
+
+  <!-- Main glass card -->
+  <div class="glass-card">
+    <div class="message-box">
+      <p class="message-text fade-in" id="message-text">
+        Maya, this little space was made just for you. Press the button below and let the love in. 💖
+      </p>
+    </div>
+    <button class="main-btn" onclick="showMotivation()">✨ Maya, Give Me Motivation ✨</button>
+    <p class="counter">Motivations received by Maya: <strong id="counter-num">0</strong> 💖</p>
+  </div>
+
+  <!-- Love notes -->
+  <div class="glass-card love-notes-section">
+    <h3>💌 Little love notes for you, Maya</h3>
+    <div class="notes-grid" id="notes-grid"></div>
+  </div>
+
+  <!-- Music toggle -->
+  <button class="music-btn" id="music-btn" onclick="toggleMusic()">🎵 Background Music (off)</button>
+
+  <!-- Footer -->
+  <footer>
+    <p class="f1">Made with endless love for Maya ❤️🌷✨</p>
+    <p class="f2">No matter how hard today feels, remember that I believe in you.</p>
+  </footer>
+</div>
+
+<audio id="music" loop>
+ <source src="Hopelessly Devoted To You (Made Popular By Olivia Newton-John) [Karaoke Version] - Party Tyme Karaoke (youtube).mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const messages = [
+  "Maya, every page you study today is an investment in the future you dream about. 💖",
+  "You are capable of far more than you realize, Maya. Keep going, my love. 🌷",
+  "Even when it feels difficult, remember that growth happens when you refuse to quit. ✨",
+  "I'm proud of your effort, Maya. Success is built one study session at a time. 💕",
+  "Your dreams are worth every minute of work you're putting in today. 🌹",
+  "Maya, the fact that you're trying already makes you stronger than most people. 💖",
+  "Take a deep breath, focus on the next task, and trust yourself. You've got this. ✨",
+  "One chapter at a time, one step at a time, one dream closer, Maya. 🌷",
+  "Maya, your dedication is one of the most beautiful things about you. Keep shining. 💛",
+  "The version of you that graduates will look back and be so grateful you didn't give up. 👑",
+  "You are smart, capable, and unstoppable. Don't ever let stress make you forget that. 💕",
+  "Maya, hard days don't last, but what you're building right now will. 🌸",
+  "Every difficult concept you master is proof of how brilliant you truly are. ✨",
+  "I see how hard you work, and it makes me fall in love with you even more. 💖",
+  "Maya, you have everything it takes to achieve everything you want. I know it. 🌷",
+  "Your brain is powerful, your heart is brave, and your future is bright. 💫",
+  "When studying feels impossible, remember you've overcome hard things before. 🌹",
+  "Maya, today's focused hour is tomorrow's proud achievement. Keep going. 💖",
+  "The greatest version of you is built in moments exactly like this one. ✨",
+  "You don't have to be perfect — you just have to keep showing up. And you do. 💕",
+  "Maya, a little progress every day adds up to something extraordinary. 🌷",
+  "Watching you chase your dreams is the most beautiful thing I've ever seen. 💖",
+  "When you're tired, rest — but please, don't quit. I believe in you so much. 🌸",
+  "Maya, your effort matters far more than any single result. I'm proud of you. ✨",
+  "Every late-night study session is a love letter to your future. 💌",
+  "You are doing better than you think, Maya. Always. 🌷",
+  "Maya, you are not just studying — you're becoming the person you're meant to be. 💖",
+  "The harder it gets, the stronger you become. You're proof of that every single day. 🌹",
+  "Your determination is your superpower, and it's one of the things I love most about you. ✨",
+  "Maya, don't compare your journey to anyone else's. Yours is beautiful and unique. 💕",
+  "On the days you doubt yourself, remember: I never do. Not even for a second. 💖",
+  "You are so much smarter than you give yourself credit for, Maya. 🌸",
+  "Every exam, every assignment, every challenge — you face them with grace. I'm in awe. 💛",
+  "Maya, the world needs what only you can bring. So please, don't stop learning. 🌷",
+  "Focus on progress, not perfection. You're doing amazingly well. ✨",
+  "Your hard work isn't invisible. I see it, I admire it, and I love you for it. 💖",
+  "Maya, success isn't always loud. Sometimes it's quietly studying on a hard day. That's you. 🌹",
+  "You are building something amazing, one study day at a time. I'm so proud. 💕",
+  "Even when the material is hard, your mind is harder. You can do this. ✨",
+  "Maya, the discipline you're showing right now will open doors you can't even imagine yet. 💖",
+  "Your future self is cheering you on. So am I. Always and forever. 🌷",
+  "You make learning look like poetry, Maya. Beautiful, meaningful, and worth every word. 💛",
+  "When you're exhausted, remember why you started — and remember I'm right here with you. 💕",
+  "Maya, brilliance isn't born — it's built through exactly the kind of effort you're giving. 🌸",
+  "You're not behind. You're not failing. You're growing. There's a big difference. ✨",
+  "Every note you write, every problem you solve — it all adds up to something incredible. 💖",
+  "Maya, I love you and I believe in you on every single day, especially the hard ones. 🌹",
+  "Today's discipline is tomorrow's confidence. Keep going, my love. 💕",
+  "You have a gift, Maya. The world deserves to see it. Don't give up on sharing it. ✨",
+  "When you feel like giving up, remember: the best chapters always come after the hardest ones. 💖",
+  "Maya, you are my favourite person in the world, and watching you grow is my greatest joy. 🌷",
+  "Your study sessions are acts of love — love for your future, your family, and yourself. 💛",
+  "I know it's not easy. I know you're tired. But I also know you're incredible. Keep going. 💕",
+  "Maya, there is no version of your future where your efforts don't pay off. Trust the process. 🌸",
+  "You've overcome every hard day so far. This one is no different. You've got this. ✨",
+  "The strength you show every day takes my breath away, Maya. Truly. 💖",
+  "Your mind is a garden — every page you study plants something beautiful. 🌷",
+  "Maya, I'm your biggest fan, your loudest cheerleader, and the one who believes in you most. 💕",
+  "Rest when you need to, but always come back. Your dreams are waiting for you. 🌹",
+  "You are doing something that matters. Never forget that. Never forget how much I love you. 💖",
+  "Maya, the girl who works this hard deserves every beautiful thing life has to offer. ✨",
+  "On the days you feel small, remember: you are building something enormous. 🌷",
+  "Your focus, your resilience, your kindness — you are everything, Maya. Everything. 💛",
+  "Maya, every single day that you try is a day I'm proud to love you. 💖",
+  "Even on your worst day, you are better than you think. I promise. 🌸",
+  "Your potential has no ceiling, Maya. Don't let doubt build one. ✨",
+  "I love the way you care about your future. It shows how courageous you truly are. 💕",
+  "Maya, studying is hard. But so are you. And hard things are kind of your specialty. 🌹",
+  "Every breakthrough you'll ever have starts exactly where you are right now. Keep going. 💖",
+  "You are not alone in this journey. I walk beside you, always, in heart and in spirit. 🌷",
+  "Maya, your dedication to your dreams is one of the most attractive things about you. 💛",
+  "Someday, you'll look back at this season and feel so proud. I already do. ✨",
+  "No matter the outcome, your effort is real, your growth is real, and my love for you is real. 💖",
+  "Maya, you are a masterpiece in progress. Don't rush it — just keep showing up. 🌸"
+];
+
+const loveNotes = [
+  "I'm proud of you, Maya ❤️",
+  "Don't forget how amazing you are 🌷",
+  "You make me smile every day 💕",
+  "I believe in you, always ✨",
+  "You can do this, my princess 👑",
+  "Your smile is my favourite thing 🌸",
+  "I love you more every day 💖",
+  "You are my everything, Maya 🌹"
+];
+
+let lastIndex = -1;
+let count = parseInt(localStorage.getItem('maya_count') || '0');
+const hearts = ['💖','💗','💕','🌷','🌸','✨','💫','🌹'];
+
+document.getElementById('counter-num').textContent = count;
+
+// Render love notes
+const grid = document.getElementById('notes-grid');
+loveNotes.forEach(note => {
+  const chip = document.createElement('div');
+  chip.className = 'note-chip';
+  chip.textContent = note;
+  grid.appendChild(chip);
+});
+
+function showMotivation() {
+  const msgEl = document.getElementById('message-text');
+
+  msgEl.classList.remove('fade-in');
+  msgEl.classList.add('fade-out');
+
+  setTimeout(() => {
+    let idx;
+    do { idx = Math.floor(Math.random() * messages.length); } while (idx === lastIndex);
+    lastIndex = idx;
+    msgEl.textContent = messages[idx];
+    msgEl.classList.remove('fade-out');
+    msgEl.classList.add('fade-in');
+  }, 400);
+
+  count++;
+  localStorage.setItem('maya_count', count);
+  document.getElementById('counter-num').textContent = count;
+  spawnHearts();
+}
+
+function spawnHearts() {
+  const container = document.getElementById('hearts-container');
+  for (let i = 0; i < 10; i++) {
+    setTimeout(() => {
+      const h = document.createElement('div');
+      h.className = 'heart-float';
+      h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+      h.style.left = (10 + Math.random() * 80) + '%';
+      h.style.top = (40 + Math.random() * 40) + '%';
+      h.style.animationDuration = (1.8 + Math.random() * 1.5) + 's';
+      h.style.fontSize = (1 + Math.random() * 1.2) + 'rem';
+      container.appendChild(h);
+      setTimeout(() => h.remove(), 3000);
+    }, i * 80);
+  }
+}
+
+// Petal canvas
+const canvas = document.getElementById('petal-canvas');
+const ctx = canvas.getContext('2d');
+let petals = [];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const petalColors = ['rgba(255,182,193,0.6)','rgba(255,214,231,0.6)','rgba(255,200,210,0.5)','rgba(212,175,55,0.25)','rgba(255,192,203,0.5)'];
+
+for (let i = 0; i < 28; i++) {
+  petals.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: 4 + Math.random() * 7,
+    color: petalColors[Math.floor(Math.random() * petalColors.length)],
+    speed: 0.4 + Math.random() * 0.8,
+    drift: (Math.random() - 0.5) * 0.6,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.03
+  });
+}
+
+function drawPetal(p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.rot);
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, p.r, p.r * 1.6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function animPetals() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  petals.forEach(p => {
+    p.y += p.speed;
+    p.x += p.drift;
+    p.rot += p.rotSpeed;
+    if (p.y > canvas.height + 20) { p.y = -20; p.x = Math.random() * canvas.width; }
+    drawPetal(p);
+  });
+  requestAnimationFrame(animPetals);
+}
+animPetals();
+
+// Music
+let musicOn = false;
+const audio = document.getElementById('music');
+audio.volume = 0.3;
+
+function toggleMusic() {
+  const btn = document.getElementById('music-btn');
+  if (!musicOn) {
+    audio.play().catch(() => {});
+    btn.textContent = '🎵 Background Music (on)';
+    btn.classList.add('on');
+    musicOn = true;
+  } else {
+    audio.pause();
+    btn.textContent = '🎵 Background Music (off)';
+    btn.classList.remove('on');
+    musicOn = false;
+  }
+}
+</script>
+</body>
+</html>
